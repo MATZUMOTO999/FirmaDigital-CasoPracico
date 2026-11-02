@@ -1,0 +1,684 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f5f7fb">
+  <title>Confianza Digital — HTTPS y firmas</title>
+  <style>
+    :root {
+      color-scheme: light;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color: #172033;
+      background: #f5f7fb;
+      font-synthesis: none;
+      text-rendering: optimizeLegibility;
+      --muted: #68748a;
+      --line: #e3e8f0;
+      --purple: #6546d7;
+      --purple-dark: #5234c4;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      min-width: 320px;
+      min-height: 100vh;
+      margin: 0;
+      background:
+        radial-gradient(ellipse at 14% 0%, rgba(226, 218, 255, .6), transparent 34rem),
+        #f5f7fb;
+    }
+
+    button, select, textarea, input { font: inherit; }
+    button { cursor: pointer; }
+
+    .page { width: min(100% - 40px, 920px); margin: 0 auto; padding: 38px 0 56px; }
+    .brand { display: flex; align-items: center; gap: 11px; }
+    .brand-mark {
+      display: grid;
+      width: 38px;
+      height: 38px;
+      place-items: center;
+      border-radius: 12px;
+      color: #fff;
+      background: var(--purple);
+      box-shadow: 0 5px 14px #6546d733;
+    }
+    .brand-name { font-size: 17px; font-weight: 750; letter-spacing: -.04em; }
+    .eyebrow { margin: 42px 0 9px; color: var(--purple); font-size: 12px; font-weight: 750; letter-spacing: .12em; text-transform: uppercase; }
+    h1 { margin: 0; font-size: clamp(30px, 5vw, 43px); letter-spacing: -.055em; line-height: 1.12; }
+    .intro { max-width: 620px; margin: 14px 0 28px; color: var(--muted); font-size: 16px; line-height: 1.65; }
+
+    .workspace {
+      overflow: hidden;
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      background: #fff;
+      box-shadow: 0 18px 50px #25324a0d, 0 2px 6px #25324a08;
+    }
+    .tabs { display: flex; gap: 4px; overflow-x: auto; padding: 12px 16px 0; border-bottom: 1px solid var(--line); }
+    .tab {
+      position: relative;
+      padding: 12px 15px 14px;
+      border: 0;
+      color: var(--muted);
+      background: transparent;
+      font-size: 14px;
+      font-weight: 650;
+    }
+    .tab[aria-selected="true"] { color: var(--purple); }
+    .tab[aria-selected="true"]::after {
+      position: absolute;
+      right: 12px;
+      bottom: -1px;
+      left: 12px;
+      height: 2px;
+      border-radius: 2px;
+      background: var(--purple);
+      content: "";
+    }
+    .panel { padding: 25px; }
+    .panel[hidden] { display: none; }
+    .panel-heading { margin: 0 0 19px; font-size: 16px; font-weight: 700; }
+    .options { display: flex; flex-wrap: wrap; gap: 18px; margin-bottom: 19px; }
+    .field { display: flex; min-width: 180px; flex: 1; flex-direction: column; gap: 8px; }
+    .field-label, .text-label { color: #465168; font-size: 13px; font-weight: 650; }
+    select, input[type="password"] {
+      width: 100%;
+      min-height: 43px;
+      padding: 0 12px;
+      border: 1px solid #dce2ec;
+      border-radius: 9px;
+      outline: none;
+      color: #172033;
+      background-color: #fff;
+    }
+    select:focus, input:focus, textarea:focus { border-color: #9c87eb; box-shadow: 0 0 0 3px #6546d71a; }
+    .text-label { display: block; margin: 0 0 8px; }
+    textarea {
+      display: block;
+      width: 100%;
+      min-height: 150px;
+      resize: vertical;
+      padding: 13px 14px;
+      border: 1px solid #dce2ec;
+      border-radius: 10px;
+      outline: none;
+      color: #172033;
+      background: #fff;
+      font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+      font-size: 13px;
+      line-height: 1.65;
+    }
+    textarea::placeholder, input::placeholder { color: #a0a9b8; }
+    .output-wrap { margin-top: 20px; }
+    .output-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 8px; }
+    .output-heading .text-label { margin: 0; }
+    .subtle-button {
+      padding: 5px 8px;
+      border: 0;
+      border-radius: 6px;
+      color: var(--purple);
+      background: transparent;
+      font-size: 12px;
+      font-weight: 700;
+    }
+    .subtle-button:hover { background: #f2efff; }
+    .actions { display: flex; align-items: center; gap: 14px; margin-top: 17px; }
+    .primary-button {
+      min-height: 43px;
+      padding: 0 17px;
+      border: 0;
+      border-radius: 9px;
+      color: #fff;
+      background: var(--purple);
+      font-size: 14px;
+      font-weight: 700;
+      transition: background .15s, transform .15s;
+    }
+    .primary-button:hover { background: var(--purple-dark); }
+    .primary-button:active { transform: translateY(1px); }
+    .primary-button:disabled { cursor: wait; opacity: .7; }
+    .status { min-height: 20px; color: var(--muted); font-size: 12px; line-height: 1.5; }
+    .status[data-state="error"] { color: #b42318; }
+    .hint {
+      margin: 20px 0 0;
+      padding: 12px 14px;
+      border: 1px solid #eee9ff;
+      border-radius: 9px;
+      color: #5e5875;
+      background: #faf9ff;
+      font-size: 12px;
+      line-height: 1.6;
+    }
+    .security-note {
+      display: flex;
+      gap: 10px;
+      align-items: flex-start;
+      margin: 17px 0 0;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.6;
+    }
+    .security-note svg { flex: 0 0 auto; margin-top: 1px; color: #38936b; }
+    .footer { margin-top: 18px; color: #8993a4; font-size: 12px; text-align: center; }
+    .roadmap { display: grid; gap: 12px; }
+    .phase-card { padding: 17px; border: 1px solid var(--line); border-radius: 12px; background: #fff; }
+    .phase-title { display: flex; align-items: center; gap: 10px; margin: 0 0 8px; font-size: 14px; }
+    .phase-number { display: grid; width: 27px; height: 27px; flex: 0 0 auto; place-items: center; border-radius: 8px; color: var(--purple); background: #f2efff; font-size: 12px; }
+    .phase-card p, .phase-card li { color: var(--muted); font-size: 13px; line-height: 1.65; }
+    .phase-card p { margin: 0; }
+    .phase-card ul { margin: 9px 0 0; padding-left: 20px; }
+    .phase-card code { overflow-wrap: anywhere; padding: 2px 5px; border-radius: 4px; background: #f3f5f9; font-family: ui-monospace, SFMono-Regular, Consolas, monospace; font-size: 12px; }
+    .connection-status { display: flex; align-items: flex-start; gap: 11px; margin-bottom: 16px; padding: 14px; border: 1px solid var(--line); border-radius: 10px; background: #f8fafc; }
+    .connection-status[data-state="secure"] { border-color: #b6e4cc; background: #f2fbf6; }
+    .connection-status[data-state="warning"] { border-color: #f2d39b; background: #fffaf0; }
+    .status-dot { width: 9px; height: 9px; flex: 0 0 auto; margin-top: 5px; border-radius: 50%; background: #d99822; }
+    .connection-status[data-state="secure"] .status-dot { background: #27945e; }
+    .connection-status strong { display: block; margin-bottom: 3px; font-size: 13px; }
+    .connection-status span { color: var(--muted); font-size: 12px; line-height: 1.55; }
+    .file-input { display: block; width: 100%; padding: 11px; border: 1px dashed #cbd3e0; border-radius: 9px; color: var(--muted); background: #fbfcfe; font-size: 13px; }
+    .fingerprint { overflow-wrap: anywhere; padding: 12px; border: 1px solid var(--line); border-radius: 9px; background: #f8fafc; font-family: ui-monospace, SFMono-Regular, Consolas, monospace; font-size: 12px; line-height: 1.7; }
+    .file-row { display: grid; gap: 8px; margin-top: 16px; }
+    .file-row .field-label { margin-bottom: 2px; }
+
+    @media (max-width: 600px) {
+      .page { width: min(100% - 24px, 920px); padding-top: 22px; }
+      .eyebrow { margin-top: 33px; }
+      .panel { padding: 19px 16px; }
+      .tabs { padding-right: 7px; padding-left: 7px; }
+      .tab { flex: 0 0 auto; padding-right: 10px; padding-left: 10px; font-size: 13px; }
+      .options { gap: 14px; }
+      .field { min-width: 100%; }
+      textarea { min-height: 130px; }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <header>
+      <div class="brand">
+        <div class="brand-mark" aria-hidden="true">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+            <path d="M7.5 10V7.5a4.5 4.5 0 0 1 9 0V10m-11 0h13v10h-13V10Z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+            <circle cx="12" cy="15" r="1.2" fill="currentColor"/>
+          </svg>
+        </div>
+        <span class="brand-name">Clave</span>
+      </div>
+      <p class="eyebrow">Caso práctico · HTTPS y firma digital</p>
+      <h1>Construye confianza<br>digital, paso a paso.</h1>
+      <p class="intro">Explora cómo TLS protege la conexión, cómo los certificados X.509 acreditan una identidad y cómo una firma digital permite comprobar la integridad y el origen de un archivo.</p>
+    </header>
+
+    <section class="workspace" aria-label="Herramientas de texto">
+      <div class="tabs" role="tablist" aria-label="Selecciona una herramienta">
+        <button class="tab" id="tab-roadmap" type="button" role="tab" aria-selected="true" aria-controls="panel-roadmap">Hoja de ruta</button>
+        <button class="tab" id="tab-sign" type="button" role="tab" aria-selected="false" aria-controls="panel-sign" tabindex="-1">Validar PDF</button>
+        <button class="tab" id="tab-encode" type="button" role="tab" aria-selected="false" aria-controls="panel-encode" tabindex="-1">Codificar</button>
+        <button class="tab" id="tab-hash" type="button" role="tab" aria-selected="false" aria-controls="panel-hash" tabindex="-1">Hash</button>
+        <button class="tab" id="tab-crypto" type="button" role="tab" aria-selected="false" aria-controls="panel-crypto" tabindex="-1">Cifrar</button>
+      </div>
+
+      <section class="panel" id="panel-roadmap" role="tabpanel" aria-labelledby="tab-roadmap">
+        <h2 class="panel-heading">Del navegador a una firma verificable</h2>
+        <div class="connection-status" id="connection-status" role="status" aria-live="polite">
+          <span class="status-dot" aria-hidden="true"></span>
+          <div><strong id="connection-title">Comprobando conexión…</strong><span id="connection-detail"></span></div>
+        </div>
+        <div class="roadmap">
+          <article class="phase-card">
+            <h3 class="phase-title"><span class="phase-number">01</span>Fundamentos de confianza</h3>
+            <p><strong>Confidencialidad:</strong> TLS cifra los datos en tránsito. <strong>Integridad:</strong> hashes y firmas detectan cambios. <strong>Autenticación:</strong> el certificado X.509 vincula una clave pública con una identidad, según la cadena de confianza.</p>
+          </article>
+          <article class="phase-card">
+            <h3 class="phase-title"><span class="phase-number">02</span>Identidad y certificados</h3>
+            <p>Una identidad de firma requiere un par de claves y un certificado. Un certificado autofirmado sirve para pruebas, pero navegadores y sistemas no lo consideran confiable por defecto. Un archivo PFX/PKCS#12 puede contener la clave privada: protégelo con contraseña y nunca lo publiques ni lo envíes al navegador.</p>
+          </article>
+          <article class="phase-card">
+            <h3 class="phase-title"><span class="phase-number">03</span>Despliegue de HTTPS</h3>
+            <p>En un servidor real, configura un certificado válido para tu dominio, la cadena completa de la CA y el listener TLS del puerto 443 (por ejemplo, Apache con <code>mod_ssl</code> o Nginx con <code>ssl_certificate</code>). Redirige HTTP a HTTPS y renueva el certificado antes de su vencimiento. El indicador de arriba informa el protocolo de esta página; no inspecciona el certificado ni sustituye la validación del navegador.</p>
+          </article>
+          <article class="phase-card">
+            <h3 class="phase-title"><span class="phase-number">04</span>Firma y verificación de archivos</h3>
+            <p>Usa la pestaña <strong>Validar PDF</strong> para aceptar únicamente archivos PDF con firma digital íntegra y certificado de confianza. Para firmar un ejecutable de Windows con Authenticode y sello de tiempo necesitas herramientas como <code>osslsigncode</code>, un certificado de firma de código emitido por una CA y una TSA.</p>
+          </article>
+          <article class="phase-card">
+            <h3 class="phase-title"><span class="phase-number">05</span>Evaluación</h3>
+            <ul>
+              <li><strong>Transporte:</strong> abre el sitio publicado con <code>https://</code> y revisa el certificado en el navegador.</li>
+              <li><strong>Integridad:</strong> valida un PDF firmado y luego modifica una copia; la comprobación debe fallar.</li>
+              <li><strong>Identidad:</strong> el certificado del firmante debe encadenar a una CA de confianza del sistema.</li>
+              <li><strong>Sello de tiempo:</strong> valida el token TSA de una firma Authenticode; la hora del equipo o de esta demo no es un sello de tiempo confiable.</li>
+            </ul>
+          </article>
+        </div>
+        <p class="hint">La validación de certificados PDF requiere el servidor local de esta aplicación. No se aceptan PDFs sin firma digital, con firma alterada o con certificado no confiable.</p>
+      </section>
+
+      <section class="panel" id="panel-sign" role="tabpanel" aria-labelledby="tab-sign" hidden>
+        <h2 class="panel-heading">Validar un PDF certificado</h2>
+        <p class="intro" style="margin: -8px 0 18px; font-size: 13px;">Solo se marcará como válido un PDF con al menos una firma digital íntegra y un certificado que encadene a una CA de confianza.</p>
+        <div class="file-row">
+          <label class="field-label" for="pdf-to-verify">Documento PDF</label>
+          <input class="file-input" id="pdf-to-verify" type="file" accept=".pdf,application/pdf">
+        </div>
+        <div class="actions">
+          <button class="primary-button" id="validate-pdf" type="button">Validar certificado y firma</button>
+          <span class="status" id="pdf-status" role="status" aria-live="polite"></span>
+        </div>
+        <div class="output-wrap" id="pdf-result" hidden>
+          <div class="output-heading"><span class="text-label">Resultado de validación</span></div>
+          <div class="fingerprint" id="pdf-result-details"></div>
+        </div>
+        <p class="security-note">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+            <path d="M8 1.5 13 3.4v4.1c0 3.1-2.1 5.5-5 7-2.9-1.5-5-3.9-5-7V3.4l5-1.9Z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/>
+            <path d="m5.7 7.8 1.5 1.5 3.2-3.2" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          <span>La comprobación se realiza en el servidor local usando las CA confiables del sistema. Los certificados autofirmados o desconocidos no se aceptan. La revocación en línea (OCSP/CRL) no se consulta; los PDFs se procesan solo en este equipo.</span>
+        </p>
+      </section>
+
+      <section class="panel" id="panel-encode" role="tabpanel" aria-labelledby="tab-encode">
+        <h2 class="panel-heading">Codifica o decodifica texto</h2>
+        <div class="options">
+          <label class="field">
+            <span class="field-label">Acción</span>
+            <select id="encode-direction">
+              <option value="encode">Codificar</option>
+              <option value="decode">Decodificar</option>
+            </select>
+          </label>
+          <label class="field">
+            <span class="field-label">Formato</span>
+            <select id="encode-format">
+              <option value="base64">Base64</option>
+              <option value="url">URL</option>
+              <option value="hex">Hexadecimal</option>
+              <option value="binary">Binario</option>
+            </select>
+          </label>
+        </div>
+        <label class="text-label" for="encode-input">Texto de entrada</label>
+        <textarea id="encode-input" placeholder="Escribe o pega aquí tu texto..." spellcheck="false"></textarea>
+        <div class="actions">
+          <button class="primary-button" type="button" data-action="encode">Codificar texto</button>
+          <span class="status" id="encode-status" role="status" aria-live="polite"></span>
+        </div>
+        <div class="output-wrap">
+          <div class="output-heading">
+            <label class="text-label" for="encode-output">Resultado</label>
+            <button class="subtle-button" type="button" data-copy="encode-output">Copiar</button>
+          </div>
+          <textarea id="encode-output" placeholder="El resultado aparecerá aquí..." readonly spellcheck="false"></textarea>
+        </div>
+        <p class="hint">Codificar no cifra ni protege el texto: Base64, URL, hexadecimal y binario se pueden revertir sin contraseña.</p>
+      </section>
+
+      <section class="panel" id="panel-hash" role="tabpanel" aria-labelledby="tab-hash" hidden>
+        <h2 class="panel-heading">Calcula la huella digital del texto</h2>
+        <div class="options">
+          <label class="field">
+            <span class="field-label">Algoritmo</span>
+            <select id="hash-algorithm">
+              <option value="SHA-256">SHA-256</option>
+              <option value="SHA-384">SHA-384</option>
+              <option value="SHA-512">SHA-512</option>
+            </select>
+          </label>
+        </div>
+        <label class="text-label" for="hash-input">Texto de entrada</label>
+        <textarea id="hash-input" placeholder="Escribe o pega aquí el texto para calcular su hash..." spellcheck="false"></textarea>
+        <div class="actions">
+          <button class="primary-button" type="button" data-action="hash">Generar hash</button>
+          <span class="status" id="hash-status" role="status" aria-live="polite"></span>
+        </div>
+        <div class="output-wrap">
+          <div class="output-heading">
+            <label class="text-label" for="hash-output">Hash hexadecimal</label>
+            <button class="subtle-button" type="button" data-copy="hash-output">Copiar</button>
+          </div>
+          <textarea id="hash-output" placeholder="El resultado aparecerá aquí..." readonly spellcheck="false"></textarea>
+        </div>
+        <p class="hint">Un hash es irreversible: sirve para comparar integridad, pero no para recuperar el texto original. Para contraseñas de usuarios se debe usar un algoritmo específico como Argon2id, bcrypt o scrypt.</p>
+      </section>
+
+      <section class="panel" id="panel-crypto" role="tabpanel" aria-labelledby="tab-crypto" hidden>
+        <h2 class="panel-heading">Cifra o descifra con una contraseña</h2>
+        <div class="options">
+          <label class="field">
+            <span class="field-label">Acción</span>
+            <select id="crypto-direction">
+              <option value="encrypt">Cifrar</option>
+              <option value="decrypt">Descifrar</option>
+            </select>
+          </label>
+          <label class="field">
+            <span class="field-label" for="crypto-password">Contraseña</span>
+            <input id="crypto-password" type="password" autocomplete="new-password" placeholder="Usa una contraseña segura">
+          </label>
+        </div>
+        <label class="text-label" for="crypto-input">Texto de entrada</label>
+        <textarea id="crypto-input" placeholder="Escribe un mensaje para cifrar o pega un paquete cifrado para descifrar..." spellcheck="false"></textarea>
+        <div class="actions">
+          <button class="primary-button" type="button" data-action="crypto">Cifrar texto</button>
+          <span class="status" id="crypto-status" role="status" aria-live="polite"></span>
+        </div>
+        <div class="output-wrap">
+          <div class="output-heading">
+            <label class="text-label" for="crypto-output">Resultado</label>
+            <button class="subtle-button" type="button" data-copy="crypto-output">Copiar</button>
+          </div>
+          <textarea id="crypto-output" placeholder="El resultado aparecerá aquí..." readonly spellcheck="false"></textarea>
+        </div>
+        <p class="security-note">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+            <path d="M8 1.5 13 3.4v4.1c0 3.1-2.1 5.5-5 7-2.9-1.5-5-3.9-5-7V3.4l5-1.9Z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/>
+            <path d="m5.7 7.8 1.5 1.5 3.2-3.2" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          <span>El cifrado usa AES-256-GCM y una clave derivada con PBKDF2-SHA-256. El procesamiento ocurre en tu navegador; el paquete incluye los datos necesarios para descifrarlo. Guarda tu contraseña: no se puede recuperar si la pierdes.</span>
+        </p>
+      </section>
+    </section>
+    <p class="footer">Los archivos y textos se procesan localmente en este equipo; no se envían a servicios externos.</p>
+  </main>
+
+  <script>
+    "use strict";
+
+    const encoder = new TextEncoder();
+    const decoder = new TextDecoder("utf-8", { fatal: true });
+    const PBKDF2_ITERATIONS = 310000;
+
+    function toBase64(bytes) {
+      let binary = "";
+      for (let offset = 0; offset < bytes.length; offset += 0x8000) {
+        binary += String.fromCharCode(...bytes.subarray(offset, offset + 0x8000));
+      }
+      return btoa(binary);
+    }
+
+    function fromBase64(value) {
+      const binary = atob(value);
+      return Uint8Array.from(binary, character => character.charCodeAt(0));
+    }
+
+    function toHex(bytes) {
+      return Array.from(bytes, byte => byte.toString(16).padStart(2, "0")).join("");
+    }
+
+    function encodeText(text, format) {
+      const bytes = encoder.encode(text);
+      switch (format) {
+        case "base64": return toBase64(bytes);
+        case "url": return encodeURIComponent(text);
+        case "hex": return toHex(bytes);
+        case "binary": return Array.from(bytes, byte => byte.toString(2).padStart(8, "0")).join(" ");
+        default: throw new Error("Selecciona un formato de codificación válido.");
+      }
+    }
+
+    function decodeText(value, format) {
+      switch (format) {
+        case "base64": return decoder.decode(fromBase64(value.trim()));
+        case "url": return decodeURIComponent(value);
+        case "hex": {
+          const hex = value.replace(/\s+/g, "");
+          if (!/^(?:[0-9a-f]{2})*$/i.test(hex)) {
+            throw new Error("El hexadecimal debe contener pares de caracteres válidos.");
+          }
+          const bytes = Uint8Array.from(hex.match(/.{2}/g) || [], pair => parseInt(pair, 16));
+          return decoder.decode(bytes);
+        }
+        case "binary": {
+          const bits = value.trim() ? value.trim().split(/\s+/) : [];
+          if (bits.some(bit => !/^(?:0|1){8}$/.test(bit))) {
+            throw new Error("El binario debe contener grupos de 8 bits separados por espacios.");
+          }
+          return decoder.decode(Uint8Array.from(bits, bit => parseInt(bit, 2)));
+        }
+        default: throw new Error("Selecciona un formato de codificación válido.");
+      }
+    }
+
+    async function deriveKey(password, salt) {
+      const material = await crypto.subtle.importKey("raw", encoder.encode(password), "PBKDF2", false, ["deriveKey"]);
+      return crypto.subtle.deriveKey(
+        { name: "PBKDF2", salt, iterations: PBKDF2_ITERATIONS, hash: "SHA-256" },
+        material,
+        { name: "AES-GCM", length: 256 },
+        false,
+        ["encrypt", "decrypt"]
+      );
+    }
+
+    async function encryptText(text, password) {
+      const salt = crypto.getRandomValues(new Uint8Array(16));
+      const iv = crypto.getRandomValues(new Uint8Array(12));
+      const key = await deriveKey(password, salt);
+      const ciphertext = await crypto.subtle.encrypt({ name: "AES-GCM", iv }, key, encoder.encode(text));
+      return JSON.stringify({
+        version: 1,
+        algorithm: "AES-256-GCM",
+        kdf: "PBKDF2-SHA-256",
+        iterations: PBKDF2_ITERATIONS,
+        salt: toBase64(salt),
+        iv: toBase64(iv),
+        ciphertext: toBase64(new Uint8Array(ciphertext))
+      }, null, 2);
+    }
+
+    async function decryptText(value, password) {
+      let packet;
+      try {
+        packet = JSON.parse(value);
+      } catch {
+        throw new Error("El texto no es un paquete cifrado válido.");
+      }
+      if (!packet || packet.version !== 1 || packet.algorithm !== "AES-256-GCM" ||
+          packet.kdf !== "PBKDF2-SHA-256" || packet.iterations !== PBKDF2_ITERATIONS ||
+          typeof packet.salt !== "string" || typeof packet.iv !== "string" ||
+          typeof packet.ciphertext !== "string") {
+        throw new Error("El paquete no tiene un formato compatible.");
+      }
+      let salt;
+      let iv;
+      let ciphertext;
+      try {
+        salt = fromBase64(packet.salt);
+        iv = fromBase64(packet.iv);
+        ciphertext = fromBase64(packet.ciphertext);
+      } catch {
+        throw new Error("El paquete cifrado está incompleto o dañado.");
+      }
+      if (salt.length !== 16 || iv.length !== 12 || ciphertext.length < 16) {
+        throw new Error("El paquete cifrado está incompleto o dañado.");
+      }
+      try {
+        const key = await deriveKey(password, salt);
+        const plaintext = await crypto.subtle.decrypt({ name: "AES-GCM", iv }, key, ciphertext);
+        return decoder.decode(plaintext);
+      } catch {
+        throw new Error("No se pudo descifrar. Verifica la contraseña y que el paquete no esté dañado.");
+      }
+    }
+
+    function activePanel() {
+      return document.querySelector(".panel:not([hidden])");
+    }
+
+    document.querySelectorAll('[role="tab"]').forEach(tab => {
+      tab.addEventListener("click", () => selectTab(tab));
+      tab.addEventListener("keydown", event => {
+        if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") return;
+        const tabs = Array.from(document.querySelectorAll('[role="tab"]'));
+        const index = tabs.indexOf(tab);
+        const step = event.key === "ArrowRight" ? 1 : -1;
+        const nextTab = tabs[(index + step + tabs.length) % tabs.length];
+        selectTab(nextTab);
+        nextTab.focus();
+      });
+    });
+
+    function selectTab(selectedTab) {
+      document.querySelectorAll('[role="tab"]').forEach(tab => {
+        const selected = tab === selectedTab;
+        tab.setAttribute("aria-selected", String(selected));
+        tab.tabIndex = selected ? 0 : -1;
+        document.getElementById(tab.getAttribute("aria-controls")).hidden = !selected;
+      });
+    }
+
+    const connectionStatus = document.getElementById("connection-status");
+    const connectionTitle = document.getElementById("connection-title");
+    const connectionDetail = document.getElementById("connection-detail");
+    if (location.protocol === "https:") {
+      connectionStatus.dataset.state = "secure";
+      connectionTitle.textContent = "La página se está cargando por HTTPS.";
+      connectionDetail.textContent = "El navegador negocia TLS y valida el certificado según su almacén de confianza. Revisa el certificado desde el indicador del navegador; esta página no puede inspeccionar la cadena.";
+    } else if (location.hostname === "localhost" || location.hostname === "127.0.0.1" || location.hostname === "[::1]") {
+      connectionStatus.dataset.state = "warning";
+      connectionTitle.textContent = "Entorno local de desarrollo.";
+      connectionDetail.textContent = "localhost puede habilitar APIs criptográficas del navegador, pero esta conexión no demuestra que un despliegue público tenga HTTPS.";
+    } else {
+      connectionStatus.dataset.state = "warning";
+      connectionTitle.textContent = "Esta página no se está sirviendo por HTTPS.";
+      connectionDetail.textContent = "Abre la versión publicada con https://. El acceso desde un archivo local no permite evaluar el TLS de un servidor.";
+    }
+
+    document.getElementById("validate-pdf").addEventListener("click", async event => {
+      const button = event.currentTarget;
+      const status = document.getElementById("pdf-status");
+      const result = document.getElementById("pdf-result");
+      const details = document.getElementById("pdf-result-details");
+      const file = document.getElementById("pdf-to-verify").files[0];
+      status.textContent = "";
+      status.dataset.state = "";
+      result.hidden = true;
+      details.textContent = "";
+      if (!file) {
+        status.textContent = "Selecciona un documento PDF.";
+        status.dataset.state = "error";
+        return;
+      }
+      if (!file.name.toLowerCase().endsWith(".pdf") || file.type && file.type !== "application/pdf") {
+        status.textContent = "Solo se aceptan documentos PDF.";
+        status.dataset.state = "error";
+        return;
+      }
+      button.disabled = true;
+      status.textContent = "Comprobando firmas y certificado…";
+      try {
+        const response = await fetch("/api/validate", {
+          method: "POST",
+          headers: { "Content-Type": "application/pdf" },
+          body: file
+        });
+        let payload;
+        try {
+          payload = await response.json();
+        } catch {
+          throw new Error("No se recibió una respuesta válida del servidor local. Inicia la aplicación con el comando indicado en README.md.");
+        }
+        if (!response.ok) throw new Error(payload.error || "El servidor no pudo validar este PDF.");
+        result.hidden = false;
+        if (payload.valid) {
+          status.textContent = "PDF certificado y firma válida.";
+        } else {
+          status.textContent = payload.error || "PDF rechazado: no cumple los requisitos de certificación.";
+          status.dataset.state = "error";
+        }
+        details.textContent = payload.signatures.map((signature, index) =>
+          `Firma ${index + 1}: ${signature.accepted ? "válida y confiable" : "rechazada"}\n` +
+          `Firma criptográfica: ${signature.signature_valid ? "válida" : "inválida"}\n` +
+          `Integridad: ${signature.intact ? "correcta" : "incorrecta"}\n` +
+          `Certificado de confianza: ${signature.trusted ? "sí" : "no"}\n` +
+          `Cobertura: ${signature.coverage}\n` +
+          (signature.error ? `Detalle: ${signature.error}` : "")
+        ).join("\n\n") || "El documento no contiene firmas digitales PDF compatibles.";
+        if (!payload.valid) status.dataset.state = "error";
+      } catch (error) {
+        status.textContent = error instanceof Error ? error.message : "No se pudo conectar con el validador local.";
+        status.dataset.state = "error";
+      } finally {
+        button.disabled = false;
+      }
+    });
+
+    document.querySelectorAll("[data-action]").forEach(button => {
+      button.addEventListener("click", async () => {
+        const panel = activePanel();
+        const action = button.dataset.action;
+        const status = panel.querySelector(".status");
+        const output = panel.querySelector("textarea[readonly]");
+        status.textContent = "";
+        status.dataset.state = "";
+        button.disabled = true;
+        try {
+          if (action === "encode") {
+            const text = document.getElementById("encode-input").value;
+            const direction = document.getElementById("encode-direction").value;
+            const format = document.getElementById("encode-format").value;
+            output.value = direction === "encode" ? encodeText(text, format) : decodeText(text, format);
+            status.textContent = direction === "encode" ? "Texto codificado." : "Texto decodificado.";
+          } else if (action === "hash") {
+            const text = document.getElementById("hash-input").value;
+            const algorithm = document.getElementById("hash-algorithm").value;
+            const digest = await crypto.subtle.digest(algorithm, encoder.encode(text));
+            output.value = toHex(new Uint8Array(digest));
+            status.textContent = `${algorithm} generado.`;
+          } else {
+            const text = document.getElementById("crypto-input").value;
+            const password = document.getElementById("crypto-password").value;
+            if (!password) throw new Error("Escribe una contraseña para continuar.");
+            const direction = document.getElementById("crypto-direction").value;
+            output.value = direction === "encrypt"
+              ? await encryptText(text, password)
+              : await decryptText(text, password);
+            status.textContent = direction === "encrypt" ? "Texto cifrado." : "Texto descifrado.";
+          }
+        } catch (error) {
+          output.value = "";
+          status.textContent = error instanceof Error ? error.message : "Ocurrió un error inesperado.";
+          status.dataset.state = "error";
+        } finally {
+          button.disabled = false;
+        }
+      });
+    });
+
+    document.getElementById("encode-direction").addEventListener("change", event => {
+      document.querySelector('[data-action="encode"]').textContent =
+        event.target.value === "encode" ? "Codificar texto" : "Decodificar texto";
+    });
+
+    document.getElementById("crypto-direction").addEventListener("change", event => {
+      document.querySelector('[data-action="crypto"]').textContent =
+        event.target.value === "encrypt" ? "Cifrar texto" : "Descifrar texto";
+    });
+
+    document.querySelectorAll("[data-copy]").forEach(button => {
+      button.addEventListener("click", async () => {
+        const output = document.getElementById(button.dataset.copy);
+        const panel = button.closest(".panel");
+        const status = panel.querySelector(".status");
+        if (!output.value) {
+          status.textContent = "No hay resultado para copiar.";
+          status.dataset.state = "error";
+          return;
+        }
+        try {
+          await navigator.clipboard.writeText(output.value);
+          status.textContent = "Copiado al portapapeles.";
+          status.dataset.state = "";
+        } catch {
+          status.textContent = "No se pudo copiar. Selecciona y copia el resultado manualmente.";
+          status.dataset.state = "error";
+        }
+      });
+    });
+  </script>
+</body>
+</html>
