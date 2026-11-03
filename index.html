@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#f5f7fb">
+  <meta name="theme-color" content="#060b0d">
   <title>Confianza Digital — HTTPS local</title>
   <link rel="stylesheet" href="style.css">
 </head>
@@ -86,6 +86,10 @@
         <div class="output-wrap" id="pdf-result" hidden>
           <div class="output-heading"><span class="text-label">Resultado de validación</span></div>
           <div class="fingerprint" id="pdf-result-details"></div>
+          <div class="pdf-download-row" id="pdf-download-row" hidden>
+            <button class="primary-button" id="download-pdf" type="button">Descargar PDF validado</button>
+            <span class="status">Descarga el archivo original; no se agregan firmas ni credenciales.</span>
+          </div>
         </div>
         <p class="security-note">
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
@@ -375,15 +379,42 @@
     }
 
     // Envía el PDF al servidor local y presenta el resultado de la comprobación de formato.
+    const pdfInput = document.getElementById("pdf-to-verify");
+    const pdfDownloadRow = document.getElementById("pdf-download-row");
+    let validatedPdf = null;
+
+    pdfInput.addEventListener("change", () => {
+      validatedPdf = null;
+      pdfDownloadRow.hidden = true;
+      document.getElementById("pdf-result").hidden = true;
+      const status = document.getElementById("pdf-status");
+      status.textContent = "";
+      status.dataset.state = "";
+    });
+
+    document.getElementById("download-pdf").addEventListener("click", () => {
+      if (!validatedPdf) return;
+      const url = URL.createObjectURL(validatedPdf);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = validatedPdf.name;
+      document.body.append(link);
+      link.click();
+      link.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    });
+
     document.getElementById("validate-pdf").addEventListener("click", async event => {
       const button = event.currentTarget;
       const status = document.getElementById("pdf-status");
       const result = document.getElementById("pdf-result");
       const details = document.getElementById("pdf-result-details");
-      const file = document.getElementById("pdf-to-verify").files[0];
+      const file = pdfInput.files[0];
       status.textContent = "";
       status.dataset.state = "";
       result.hidden = true;
+      pdfDownloadRow.hidden = true;
+      validatedPdf = null;
       details.textContent = "";
       if (!file) {
         status.textContent = "Selecciona un documento PDF.";
@@ -413,6 +444,8 @@
         result.hidden = false;
         if (payload.valid) {
           status.textContent = payload.message || "PDF válido localmente.";
+          validatedPdf = file;
+          pdfDownloadRow.hidden = false;
         } else {
           status.textContent = payload.error || "PDF rechazado: no cumple el formato requerido.";
           status.dataset.state = "error";
