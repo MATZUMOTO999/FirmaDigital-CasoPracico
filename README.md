@@ -6,13 +6,16 @@ Aplicación educativa en español para estudiar HTTPS y validación local de doc
 
 Se requiere Python 3.10 o posterior.
 
+En PowerShell, primero cambia a la carpeta donde está el proyecto. Por ejemplo:
+
 ```powershell
+Set-Location "C:\FirmaDigital-CasoPracico"
 python -m venv .venv
 .\.venv\Scripts\python -m pip install -r requirements.txt
 .\.venv\Scripts\python server.py
 ```
 
-Abre <http://localhost:8765>. Para detener el servidor, pulsa `Ctrl+C`.
+Si guardaste el proyecto en otra carpeta, reemplaza la ruta de `Set-Location`. Después abre <http://localhost:8765>. Para detener el servidor, pulsa `Ctrl+C`.
 
 ## Qué comprueba la validación PDF
 
